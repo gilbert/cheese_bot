@@ -24,7 +24,7 @@ def DoTurn(pw):
   mine, opp, neut = pw.AllPlanets();
   
   if len(mine) == 1 and len(opp) == 1:
-    print "1 2 0 Excess:",mine[0].excess
+    # print "1 2 0 Excess:",mine[0].excess
     CASH_RETURN_TIME_CAP = pw.Distance(mine[0],opp[0]) + mine[0].excess / mine[0].growth_rate + 1
   
   # choose strat based on game state
