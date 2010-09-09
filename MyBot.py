@@ -98,6 +98,7 @@ def attack(mine,opp,pw):
         # p.excess -= req
         p.RemoveShips(req)
         pw.IssueOrder(p.pid, e.pid, req)
+        pw.CreateFleet(p,e,req)
         if p.excess <= 0: break
       elif req == 0 and p.excess > 0:
         # print "1 2 0 NORMALNESS [4]",p.pid,"with req = ",req,"and excess = ",p.excess,"targeting",e.pid
@@ -129,10 +130,12 @@ def expand(mine,neut,opp,pw):
       if retRate(p,n,pw.Distance(p,n)) > CASH_RETURN_TIME_CAP:
         break
       
-      n_ships = n.NumShips() - sum([f.num_ships for f in pw.Fleets() if f.dest == n.pid and f.owner == 1])
-      if n_ships >= 0 and n_ships+2 < p.NumShips() and incoming(p,pw) < p.NumShips() - n_ships+2:
-        p.RemoveShips(n_ships+2)
-        pw.IssueOrder(p.pid, n.pid, n_ships+2)
+      n_ships = canKill(p,n,pw)
+      n_ships -= ((pw.Distance(p,n)+2) * n.growth_rate)
+      if n_ships >= 0 and p.excess >= n_ships:
+        p.RemoveShips(n_ships)
+        pw.IssueOrder(p.pid, n.pid, n_ships)
+        pw.CreateFleet(p,n,n_ships)
         expanded = True
   
   if not expanded:
