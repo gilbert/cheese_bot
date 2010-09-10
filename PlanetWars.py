@@ -17,7 +17,18 @@ class Fleet:
 
 
 class Planet:
-  def __init__(self, planet_id, owner, num_ships, growth_rate, x, y):
+  _planets = {}
+  @classmethod
+  def read(cls, planet_id, owner, num_ships, growth_rate, x, y):
+    p = cls._planets.get(planet_id)
+    if p == None:
+      p = cls._planets[planet_id] = Planet()
+      p.update(planet_id, owner, num_ships, growth_rate, x, y)
+    else:
+      p.update(planet_id, owner, num_ships, growth_rate, x, y)
+    return p
+  
+  def update(self,planet_id, owner, num_ships, growth_rate, x, y):
     self.pid = planet_id
     self.owner = owner
     self.num_ships = num_ships
@@ -64,7 +75,6 @@ class Planet:
 
 class PlanetWars:
   def __init__(self, gameState):
-    self._planets = []
     self._fleets = []
     self.production = {0:0,1:0,2:0}
     self.ParseGameState(gameState)
@@ -75,10 +85,10 @@ class PlanetWars:
     self._fleets.append(Fleet(p.owner,amount,p.pid,dest.pid,dist,dist))
 
   def NumPlanets(self):
-    return len(self._planets)
+    return len(Planet._planets)
 
   def GetPlanet(self, planet_id):
-    return self._planets[planet_id]
+    return Planet._planets[planet_id]
 
   def NumFleets(self):
     return len(self._fleets)
@@ -87,11 +97,11 @@ class PlanetWars:
     return self._fleets[fleet_id]
 
   def Planets(self):
-    return self._planets
+    return Planet._planets
   
   def AllPlanets(self):
     mine, opp, neut = ([],[],[])
-    for p in self._planets:
+    for pid, p in Planet._planets.items():
       if p.owner == 0:
         neut.append(p)
       elif p.owner == 1:
@@ -143,7 +153,7 @@ class PlanetWars:
 
   def MyPlanets(self):
     r = []
-    for p in self._planets:
+    for p in Planet._planets:
       if p.Owner() != 1:
         continue
       r.append(p)
@@ -151,7 +161,7 @@ class PlanetWars:
 
   def NeutralPlanets(self):
     r = []
-    for p in self._planets:
+    for p in Planet._planets:
       if p.Owner() != 0:
         continue
       r.append(p)
@@ -159,7 +169,7 @@ class PlanetWars:
 
   def EnemyPlanets(self):
     r = []
-    for p in self._planets:
+    for p in Planet._planets:
       if p.Owner() <= 1:
         continue
       r.append(p)
@@ -167,7 +177,7 @@ class PlanetWars:
 
   def NotMyPlanets(self):
     r = []
-    for p in self._planets:
+    for p in Planet._planets:
       if p.Owner() == 1:
         continue
       r.append(p)
@@ -194,7 +204,7 @@ class PlanetWars:
 
   def ToString(self):
     s = ''
-    for p in self._planets:
+    for p in Planet._planets:
       s += "P %f %f %d %d %d\n" % \
        (p.X(), p.Y(), p.Owner(), p.NumShips(), p.GrowthRate())
     for f in self._fleets:
@@ -204,8 +214,8 @@ class PlanetWars:
     return s
 
   def Distance(self, source_planet, destination_planet):
-    source = self._planets[source_planet.pid]
-    destination = self._planets[destination_planet.pid]
+    source = Planet._planets[source_planet.pid]
+    destination = Planet._planets[destination_planet.pid]
     dx = source.X() - destination.X()
     dy = source.Y() - destination.Y()
     return int(ceil(sqrt(dx * dx + dy * dy)))
@@ -218,7 +228,7 @@ class PlanetWars:
     stdout.flush()
 
   def IsAlive(self, player_id):
-    for p in self._planets:
+    for p in Planet._planets:
       if p.Owner() == player_id:
         return True
     for f in self._fleets:
@@ -227,9 +237,9 @@ class PlanetWars:
     return False
 
   def ParseGameState(self, s):
-    self._planets = []
     self._fleets = []
     self.helpNeeded = []
+    # self.capturing = []
     lines = s.split("\n")
     planet_id = 0
 
@@ -241,7 +251,7 @@ class PlanetWars:
       if tokens[0] == "P":
         if len(tokens) != 6:
           return 0
-        p = Planet(planet_id, # The ID of this planet
+        p = Planet.read(planet_id, # The ID of this planet
                    int(tokens[3]), # Owner
                    int(tokens[4]), # Num ships
                    int(tokens[5]), # Growth rate
@@ -250,7 +260,6 @@ class PlanetWars:
         if p.owner in [0,1,2]:
           self.production[p.owner] += p.growth_rate
         planet_id += 1
-        self._planets.append(p)
       elif tokens[0] == "F":
         if len(tokens) != 7:
           return 0

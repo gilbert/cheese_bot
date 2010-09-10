@@ -24,7 +24,6 @@ def DoTurn(pw):
   mine, opp, neut = pw.AllPlanets();
   
   if len(mine) == 1 and len(opp) == 1:
-    # print "1 2 0 Excess:",mine[0].excess
     CASH_RETURN_TIME_CAP = pw.Distance(mine[0],opp[0]) + mine[0].excess / mine[0].growth_rate + 1
   
   # choose strat based on game state
@@ -68,20 +67,14 @@ def attack(mine,opp,pw):
   fun = lambda p: lambda x,y: cmp(retRate(p,x,pw.Distance(p,x)), retRate(p,y,pw.Distance(p,y)))
   
   for p in mine:
-    # print "1 2 0 NORMALNESS[0] id=",p.pid,"num_ships =",p.num_ships,"excess =",p.excess
+    
     if p.excess < 0 and p.growth_rate <= 2 and abs(p.excess) > MAGIC_ABANDON_NUMBER * p.growth_rate:
       # ABANDON SHIP.
-      # print "1 2 0 ABANDON SHIP",p.pid
-      # print "ABANDON SHIP",p.pid
-      # p.excess = p.num_ships
+      p.excess = p.num_ships
       help_others(p,pw)
-      continue
     elif p.excess < 0:
-      # print "1 2 0 ABANDON SHIP[2]",p.pid
       # halp! haalp!
-      # print "HALP",p.pid,map(lambda x:(x[0],x[1].excess), pw.helpNeeded)
       continue
-    # print "NORMALNESS 1",p.pid
     # we got some ships to spare. oh yeah.
     if p.growth_rate <= 2:
       # no one cares about you.
@@ -94,32 +87,26 @@ def attack(mine,opp,pw):
       req = canKill(p, e, pw)
       
       if req > 0 and req <= p.excess:
-        # print "1 2 0 NORMALNESS [3]",p.pid
         # p.excess -= req
         p.RemoveShips(req)
         pw.IssueOrder(p.pid, e.pid, req)
         pw.CreateFleet(p,e,req)
         if p.excess <= 0: break
       elif req == 0 and p.excess > 0:
-        # print "1 2 0 NORMALNESS [4]",p.pid,"with req = ",req,"and excess = ",p.excess,"targeting",e.pid
         # can't kill, but let's toss some excess for pressure
-        amount = (p.excess - 10) / 5
+        amount = p.excess / 2
         if amount < e.growth_rate + (e.growth_rate / 5) + 1:
           # useless.
-          # print "1 2 0 useless",p.pid
           continue
-        # p.excess -= amount
         p.RemoveShips(amount)
         pw.IssueOrder(p.pid, e.pid, amount)
         pw.CreateFleet(p,e,amount)
         if p.excess <= 0: break
-      # print "NORMALNESS 5",p.pid
     if p.excess > 0:
       help_others(p,pw)
 
 def expand(mine,neut,opp,pw):
   global CASH_RETURN_TIME_CAP
-  # print "expanding"
   expanded = False
   # search for some quick cash
   fun = lambda p: lambda x,y: cmp(retRate(p,x,pw.Distance(p,x)), retRate(p,y,pw.Distance(p,y)))
@@ -145,11 +132,9 @@ def help_others(p,pw):
   # first pass: help someone you can fully save
   for (turns_left,dyingPlanet) in pw.helpNeeded:
     if dyingPlanet.pid == p.pid: continue
-    # print "1 2 0 ER WHAT[0]",p.pid
     # tup is in format: (turns_until_death, Planet)
     amount = abs(dyingPlanet.excess)
     if turns_left <= pw.Distance(p,dyingPlanet) and p.excess >= amount:
-      # print "1 2 0 ER WHAT[1]",p.pid
       pw.IssueOrder(p.pid, dyingPlanet.pid, amount)
       p.RemoveShips(amount)
       dyingPlanet.HelpOut(amount)
@@ -157,7 +142,6 @@ def help_others(p,pw):
   # second pass: just help whoever you can
   for (turns_left,dyingPlanet) in pw.helpNeeded:
     if dyingPlanet.pid == p.pid: continue
-    # print "1 2 0 ER WHAT[2]",p.pid
     # tup is in format: (turns_until_death, Planet)
     amount = abs(dyingPlanet.excess)
     if amount > p.excess: amount = p.excess
